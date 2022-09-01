@@ -27,7 +27,7 @@ from HARK.interpolation import LinearInterp, BilinearInterp
 from HARK.core import MetricObject, NullFunc # Basic HARK features
 from copy import deepcopy
 from HARK.ConsumptionSaving.ConsIndShockModel import utility
-
+from HARK.utilities import make_grid_exp_mult
 # From consav
 from consav import linear_interp
 
@@ -242,35 +242,98 @@ def optimizer(obj,a,b,args=(),tol = 1e-6): # making tolerance smaller doesn't ch
     else:
         return (c+b)/2
 
+
+def construct_grid(Min, Max, Count, grid_type, NestFac):
+    """
+    Based on: construct_assets_grid
+
+    Constructs grids in different grid-types.
+    Options are: linear or multi-exponentially
+
+    Parameters
+    ----------
+    Min:                  float
+        Minimum value for the grid
+    Max:                  float
+        Maximum value for the grid
+    Count:                 int
+        Size of the grid
+    # aXtraExtra:                [float]
+    #     Extra values for the a-grid.
+    # exp_nest:               int
+    #     Level of nesting for the exponentially spaced grid
+
+    Returns
+    -------
+    Grid:     np.ndarray
+        Base array of values for the post-decision-state grid.
+    """
+    # Unpack the parameters
+    Min = Min
+    Max = Max
+    Count = Count
+    # aXtraExtra = parameters.aXtraExtra
+    grid_type = grid_type
+    exp_nest = NestFac
+
+    # Set up post decision state grid:
+    Grid = None
+    if grid_type == "linear":
+        Grid = np.linspace(Min, Max, Count)
+    elif grid_type == "exp_mult":
+        Grid = make_grid_exp_mult(
+            ming=Min, maxg=Max, ng=Count, timestonest=exp_nest
+        )
+    elif grid_type == "nonlinear":
+        Grid = nonlinspace(Min, Max, Count, 1.1)
+    else:
+        raise Exception(
+            "grid_type not recognized in __init__."
+            + "Please ensure grid_type is 'linear', 'nonlinear', or 'exp_mult'"
+        )
+
+    # Add in additional points for the grid:
+    # for a in aXtraExtra:
+    #     if a is not None:
+    #         if a not in aXtraGrid:
+    #             j = aXtraGrid.searchsorted(a)
+    #             aXtraGrid = np.insert(aXtraGrid, j, a)
+
+    return Grid
+
+
 # For graphs:
 ### Plot decision function of adjusting for each n and m grid
 import ipywidgets as widgets
 from matplotlib import cm
 import matplotlib.pyplot as plt
 
+
 def decision_function(model):
     widgets.interact(_decision_functions,
-        model=widgets.fixed(model),
-        t=widgets.Dropdown(description='t', 
-            options=list(range(model.T_cycle + 1)), value=0),
-        name=widgets.Dropdown(description='name', 
-            options=['discrete','total','adj','keep'], value='discrete')
-        )
+                     model=widgets.fixed(model),
+                     t=widgets.Dropdown(description='t',
+                                        options=list(range(model.T_cycle + 1)), value=0),
+                     name=widgets.Dropdown(description='name',
+                                           options=['discrete', 'total', 'adj', 'keep'], value='discrete')
+                     )
 
-def _decision_functions(model,t,name):
 
+def _decision_functions(model, t, name):
     if name == 'discrete':
-        _discrete(model,t)
+        _discrete(model, t)
     elif name == 'total':
-        _total(model,t)
+        _total(model, t)
     elif name == 'adj':
-        _adj(model,t)
+        _adj(model, t)
     elif name == 'keep':
-        _keep(model,t)
+        _keep(model, t)
+
+
 #     elif name == 'post_decision' and t <= model.par.T-2:
-#         _w(model,t)      
-        
-def _discrete(model,t):
+#         _w(model,t)
+
+def _discrete(model, t):
     nNrmGrid = np.linspace(model.nNrmMin, model.nNrmMax, model.nNrmCount)
     mNrmGrid = np.linspace(model.mNrmMin, model.mNrmMax, model.mNrmCount)
 
@@ -279,7 +342,7 @@ def _discrete(model,t):
     fig = plt.figure(figsize=(6, 6))
     ax = fig.add_subplot(1, 1, 1)
 
-    I = model.solution[t].adjusting(n , m) > 0
+    I = model.solution[t].adjusting(n, m) > 0
 
     x = m[I].ravel()
     y = n[I].ravel()
@@ -303,33 +366,34 @@ def _discrete(model,t):
     ax.set_ylim([nNrmGrid[0], nNrmGrid[-1]])
 
     plt.show()
-    
+
+
 # def _adj(model,t):
 
 #     # a. grids
 #     xNrmGrid = np.linspace(model.xNrmMin, model.xNrmMax, model.xNrmCount)
-    
+
 #     # b. figure
 #     fig = plt.figure(figsize=(12,6))
 #     ax_b = fig.add_subplot(1,2,1)
 #     ax_v = fig.add_subplot(1,2,2)
-    
+
 #     # c. plot consumption
 #     # Consumption Functions
 #     cFuncAdj_plt = np.zeros(model.xNrmCount)
 #     dFuncAdj_plt = np.zeros(model.xNrmCount)
 #     exFuncAdj_plt = np.zeros(model.xNrmCount)
-    
+
 #     # Value Functions
 #     vFuncAdj_plt = np.zeros(model.xNrmCount)
-   
+
 #     for i in range(model.xNrmCount):
 #         cFuncAdj_plt[i] = model.solution[t].cFuncAdj(xNrmGrid[i])
 #         dFuncAdj_plt[i] = model.solution[t].dFuncAdj(xNrmGrid[i])
 #         exFuncAdj_plt[i] = model.solution[t].exFuncAdj(xNrmGrid[i])
 #         # Value Functions
 #         vFuncAdj_plt[i] = model.solution[t].vFuncAdj(xNrmGrid[i])
-        
+
 #     ax_b.plot(xNrmGrid,cFuncAdj_plt,label = "cFuncAdj", lw=2)
 #     ax_b.plot(xNrmGrid,dFuncAdj_plt,label = "dFuncAdj", lw=2)
 #     ax_b.plot(xNrmGrid,exFuncAdj_plt,label = "exFuncAdj", lw=2)
@@ -345,173 +409,170 @@ def _discrete(model,t):
 #         ax.grid(True)
 #         ax.set_xlabel('$x_t$')
 #         ax.set_xlim([xNrmGrid[0],xNrmGrid[-1]])
-    
+
 #     plt.legend()
 #     plt.show()
-    
-def _adj(model,t):
 
+def _adj(model, t):
     # grids
     nNrmGrid = np.linspace(model.nNrmMin, model.nNrmMax, model.nNrmCount)
     mNrmGrid = np.linspace(model.mNrmMin, model.mNrmMax, model.mNrmCount)
 
     # b. figure
-    fig = plt.figure(figsize=(12,6))
-    ax_c = fig.add_subplot(2,2,1,projection='3d')
-    ax_d = fig.add_subplot(2,2,2,projection='3d')
-    ax_ex = fig.add_subplot(2,2,3,projection='3d')
-    ax_v = fig.add_subplot(2,2,4,projection='3d')
+    fig = plt.figure(figsize=(12, 6))
+    ax_c = fig.add_subplot(2, 2, 1, projection='3d')
+    ax_d = fig.add_subplot(2, 2, 2, projection='3d')
+    ax_ex = fig.add_subplot(2, 2, 3, projection='3d')
+    ax_v = fig.add_subplot(2, 2, 4, projection='3d')
 
-    n,m = np.meshgrid(nNrmGrid, mNrmGrid,indexing='ij')
+    n, m = np.meshgrid(nNrmGrid, mNrmGrid, indexing='ij')
 
     # c. plot consumption
     shape = (model.nNrmCount, model.mNrmCount)
     cFuncAdj_plt = np.zeros(shape)
     dFuncAdj_plt = np.zeros(shape)
-    exFuncAdj_plt = np.zeros(shape)    
+    exFuncAdj_plt = np.zeros(shape)
     vFuncAdj_plt = np.zeros(shape)
-    
+
     for i_n in range(model.nNrmCount):
         for i_m in range(model.mNrmCount):
-            x = (1 - model.adjC)*nNrmGrid[i_n] + mNrmGrid[i_m]
-            cFuncAdj_plt[i_n,i_m] = model.solution[t].cFuncAdj(x)
-            dFuncAdj_plt[i_n,i_m] = model.solution[t].dFuncAdj(x)
-            exFuncAdj_plt[i_n,i_m] = model.solution[t].exFuncAdj(x)
-            vFuncAdj_plt[i_n,i_m] = model.solution[t].vFuncAdj(x)     
-            
-    ax_c.plot_surface(n,m,cFuncAdj_plt,cmap=cm.viridis,edgecolor='none')
-    ax_c.set_title(f'$c^{{adj}}$ ($t = {t}$)',pad=10)
+            x = (1 - model.adjC) * nNrmGrid[i_n] + mNrmGrid[i_m]
+            cFuncAdj_plt[i_n, i_m] = model.solution[t].cFuncAdj(x)
+            dFuncAdj_plt[i_n, i_m] = model.solution[t].dFuncAdj(x)
+            exFuncAdj_plt[i_n, i_m] = model.solution[t].exFuncAdj(x)
+            vFuncAdj_plt[i_n, i_m] = model.solution[t].vFuncAdj(x)
 
-    ax_d.plot_surface(n,m,dFuncAdj_plt,cmap=cm.viridis,edgecolor='none')
-    ax_d.set_title(f'$d^{{adj}}$ ($t = {t}$)',pad=10)
+    ax_c.plot_surface(n, m, cFuncAdj_plt, cmap=cm.viridis, edgecolor='none')
+    ax_c.set_title(f'$c^{{adj}}$ ($t = {t}$)', pad=10)
 
-    ax_ex.plot_surface(n,m,exFuncAdj_plt,cmap=cm.viridis,edgecolor='none')
-    ax_ex.set_title(f'$ex^{{adj}}$ ($t = {t}$)',pad=10)
-    
+    ax_d.plot_surface(n, m, dFuncAdj_plt, cmap=cm.viridis, edgecolor='none')
+    ax_d.set_title(f'$d^{{adj}}$ ($t = {t}$)', pad=10)
+
+    ax_ex.plot_surface(n, m, exFuncAdj_plt, cmap=cm.viridis, edgecolor='none')
+    ax_ex.set_title(f'$ex^{{adj}}$ ($t = {t}$)', pad=10)
+
     # d. plot value function
-    ax_v.plot_surface(n,m,vFuncAdj_plt,cmap=cm.viridis,edgecolor='none')
-    ax_v.set_title(f'neg. inverse $v^{{adj}}$ ($t = {t}$)',pad=10)
+    ax_v.plot_surface(n, m, vFuncAdj_plt, cmap=cm.viridis, edgecolor='none')
+    ax_v.set_title(f'neg. inverse $v^{{adj}}$ ($t = {t}$)', pad=10)
 
     # e. details
-    for ax in [ax_c,ax_v]:
-
+    for ax in [ax_c, ax_v]:
         ax.grid(True)
         ax.set_xlabel('$n_t$')
-        ax.set_xlim([nNrmGrid[0],nNrmGrid[-1]])
+        ax.set_xlim([nNrmGrid[0], nNrmGrid[-1]])
         ax.set_ylabel('$m_t$')
-        ax.set_ylim([mNrmGrid[0],mNrmGrid[-1]])
+        ax.set_ylim([mNrmGrid[0], mNrmGrid[-1]])
         ax.invert_xaxis()
     plt.legend()
     plt.show()
-    
-    
-def _keep(model,t):
 
+
+def _keep(model, t):
     # grids
     nNrmGrid = np.linspace(model.nNrmMin, model.nNrmMax, model.nNrmCount)
     mNrmGrid = np.linspace(model.mNrmMin, model.mNrmMax, model.mNrmCount)
 
     # b. figure
-    fig = plt.figure(figsize=(12,6))
-    ax_c = fig.add_subplot(2,2,1,projection='3d')
-    ax_d = fig.add_subplot(2,2,2,projection='3d')
-    ax_ex = fig.add_subplot(2,2,3,projection='3d')
-    ax_v = fig.add_subplot(2,2,4,projection='3d')
+    fig = plt.figure(figsize=(12, 6))
+    ax_c = fig.add_subplot(2, 2, 1, projection='3d')
+    ax_d = fig.add_subplot(2, 2, 2, projection='3d')
+    ax_ex = fig.add_subplot(2, 2, 3, projection='3d')
+    ax_v = fig.add_subplot(2, 2, 4, projection='3d')
 
-    n,m = np.meshgrid(nNrmGrid, mNrmGrid,indexing='ij')
+    n, m = np.meshgrid(nNrmGrid, mNrmGrid, indexing='ij')
 
     # c. plot consumption
     shape = (model.nNrmCount, model.mNrmCount)
     cFuncKeep_plt = np.zeros(shape)
     dFuncKeep_plt = np.zeros(shape)
-    exFuncKeep_plt = np.zeros(shape)    
+    exFuncKeep_plt = np.zeros(shape)
     vFuncKeep_plt = np.zeros(shape)
-    
+
     for i_n in range(model.nNrmCount):
         for i_m in range(model.mNrmCount):
-            cFuncKeep_plt[i_n,i_m] = model.solution[t].cFuncKeep(nNrmGrid[i_n],mNrmGrid[i_m])
-            dFuncKeep_plt[i_n,i_m] = model.solution[t].dFuncKeep(nNrmGrid[i_n],mNrmGrid[i_m])
-            exFuncKeep_plt[i_n,i_m] = model.solution[t].exFuncKeep(nNrmGrid[i_n],mNrmGrid[i_m])
-            vFuncKeep_plt[i_n,i_m] = model.solution[t].vFuncKeep(nNrmGrid[i_n],mNrmGrid[i_m])     
-            
-    ax_c.plot_surface(n,m,cFuncKeep_plt,cmap=cm.viridis,edgecolor='none')
-    ax_c.set_title(f'$c^{{keep}}$ ($t = {t}$)',pad=10)
+            cFuncKeep_plt[i_n, i_m] = model.solution[t].cFuncKeep(nNrmGrid[i_n], mNrmGrid[i_m])
+            dFuncKeep_plt[i_n, i_m] = model.solution[t].dFuncKeep(nNrmGrid[i_n], mNrmGrid[i_m])
+            exFuncKeep_plt[i_n, i_m] = model.solution[t].exFuncKeep(nNrmGrid[i_n], mNrmGrid[i_m])
+            vFuncKeep_plt[i_n, i_m] = model.solution[t].vFuncKeep(nNrmGrid[i_n], mNrmGrid[i_m])
 
-    ax_d.plot_surface(n,m,dFuncKeep_plt,cmap=cm.viridis,edgecolor='none')
-    ax_d.set_title(f'$d^{{keep}}$ ($t = {t}$)',pad=10)
+    ax_c.plot_surface(n, m, cFuncKeep_plt, cmap=cm.viridis, edgecolor='none')
+    ax_c.set_title(f'$c^{{keep}}$ ($t = {t}$)', pad=10)
 
-    ax_ex.plot_surface(n,m,exFuncKeep_plt,cmap=cm.viridis,edgecolor='none')
-    ax_ex.set_title(f'$ex^{{keep}}$ ($t = {t}$)',pad=10)
-    
+    ax_d.plot_surface(n, m, dFuncKeep_plt, cmap=cm.viridis, edgecolor='none')
+    ax_d.set_title(f'$d^{{keep}}$ ($t = {t}$)', pad=10)
+
+    ax_ex.plot_surface(n, m, exFuncKeep_plt, cmap=cm.viridis, edgecolor='none')
+    ax_ex.set_title(f'$ex^{{keep}}$ ($t = {t}$)', pad=10)
+
     # d. plot value function
-    ax_v.plot_surface(n,m,vFuncKeep_plt,cmap=cm.viridis,edgecolor='none')
-    ax_v.set_title(f'neg. inverse $v^{{keep}}$ ($t = {t}$)',pad=10)
+    ax_v.plot_surface(n, m, vFuncKeep_plt, cmap=cm.viridis, edgecolor='none')
+    ax_v.set_title(f'neg. inverse $v^{{keep}}$ ($t = {t}$)', pad=10)
 
     # e. details
-    for ax in [ax_c,ax_v]:
-
+    for ax in [ax_c, ax_v]:
         ax.grid(True)
         ax.set_xlabel('$n_t$')
-        ax.set_xlim([nNrmGrid[0],nNrmGrid[-1]])
+        ax.set_xlim([nNrmGrid[0], nNrmGrid[-1]])
         ax.set_ylabel('$m_t$')
-        ax.set_ylim([mNrmGrid[0],mNrmGrid[-1]])
+        ax.set_ylim([mNrmGrid[0], mNrmGrid[-1]])
         ax.invert_xaxis()
     plt.legend()
     plt.show()
-    
-def _total(model,t):
 
+
+def _total(model, t):
     # grids
     nNrmGrid = np.linspace(model.nNrmMin, model.nNrmMax, model.nNrmCount)
     mNrmGrid = np.linspace(model.mNrmMin, model.mNrmMax, model.mNrmCount)
 
     # b. figure
-    fig = plt.figure(figsize=(12,6))
-    ax_c = fig.add_subplot(2,2,1,projection='3d')
-    ax_d = fig.add_subplot(2,2,2,projection='3d')
-    ax_ex = fig.add_subplot(2,2,3,projection='3d')
-    ax_v = fig.add_subplot(2,2,4,projection='3d')
+    fig = plt.figure(figsize=(12, 6))
+    ax_c = fig.add_subplot(2, 2, 1, projection='3d')
+    ax_d = fig.add_subplot(2, 2, 2, projection='3d')
+    ax_ex = fig.add_subplot(2, 2, 3, projection='3d')
+    ax_v = fig.add_subplot(2, 2, 4, projection='3d')
 
-    n,m = np.meshgrid(nNrmGrid, mNrmGrid,indexing='ij')
+    n, m = np.meshgrid(nNrmGrid, mNrmGrid, indexing='ij')
 
     # c. plot consumption
     shape = (model.nNrmCount, model.mNrmCount)
     cFunc_plt = np.zeros(shape)
     dFunc_plt = np.zeros(shape)
-    exFunc_plt = np.zeros(shape)    
+    exFunc_plt = np.zeros(shape)
     vFunc_plt = np.zeros(shape)
-    
+
     for i_n in range(model.nNrmCount):
         for i_m in range(model.mNrmCount):
-            cFunc_plt[i_n,i_m] = model.solution[t].cFunc(nNrmGrid[i_n],mNrmGrid[i_m])
-            dFunc_plt[i_n,i_m] = model.solution[t].dFunc(nNrmGrid[i_n],mNrmGrid[i_m])
-            exFunc_plt[i_n,i_m] = model.solution[t].exFunc(nNrmGrid[i_n],mNrmGrid[i_m])
-            vFunc_plt[i_n,i_m] = model.solution[t].vFunc(nNrmGrid[i_n],mNrmGrid[i_m])     
-            
-    ax_c.plot_surface(n,m,cFunc_plt,cmap=cm.viridis,edgecolor='none')
-    ax_c.set_title(f'$c^{{total}}$ ($t = {t}$)',pad=10)
+            cFunc_plt[i_n, i_m] = model.solution[t].cFunc(nNrmGrid[i_n], mNrmGrid[i_m])
+            dFunc_plt[i_n, i_m] = model.solution[t].dFunc(nNrmGrid[i_n], mNrmGrid[i_m])
+            exFunc_plt[i_n, i_m] = model.solution[t].exFunc(nNrmGrid[i_n], mNrmGrid[i_m])
+            vFunc_plt[i_n, i_m] = model.solution[t].vFunc(nNrmGrid[i_n], mNrmGrid[i_m])
 
-    ax_d.plot_surface(n,m,dFunc_plt,cmap=cm.viridis,edgecolor='none')
-    ax_d.set_title(f'$d^{{total}}$ ($t = {t}$)',pad=10)
+    ax_c.plot_surface(n, m, cFunc_plt, cmap=cm.viridis, edgecolor='none')
+    ax_c.set_title(f'$c^{{total}}$ ($t = {t}$)', pad=10)
 
-    ax_ex.plot_surface(n,m,exFunc_plt,cmap=cm.viridis,edgecolor='none')
-    ax_ex.set_title(f'$ex^{{total}}$ ($t = {t}$)',pad=10)
-    
+    ax_d.plot_surface(n, m, dFunc_plt, cmap=cm.viridis, edgecolor='none')
+    ax_d.set_title(f'$d^{{total}}$ ($t = {t}$)', pad=10)
+
+    ax_ex.plot_surface(n, m, exFunc_plt, cmap=cm.viridis, edgecolor='none')
+    ax_ex.set_title(f'$ex^{{total}}$ ($t = {t}$)', pad=10)
+
     # d. plot value function
-    ax_v.plot_surface(n,m,vFunc_plt,cmap=cm.viridis,edgecolor='none')
-    ax_v.set_title(f'neg. inverse $v^{{total}}$ ($t = {t}$)',pad=10)
+    ax_v.plot_surface(n, m, vFunc_plt, cmap=cm.viridis, edgecolor='none')
+    ax_v.set_title(f'neg. inverse $v^{{total}}$ ($t = {t}$)', pad=10)
 
     # e. details
-    for ax in [ax_c,ax_d,ax_ex,ax_v]:
-
+    for ax in [ax_c, ax_d, ax_ex, ax_v]:
         ax.grid(True)
         ax.set_xlabel('$n_t$')
-        ax.set_xlim([nNrmGrid[0],nNrmGrid[-1]])
+        ax.set_xlim([nNrmGrid[0], nNrmGrid[-1]])
         ax.set_ylabel('$m_t$')
-        ax.set_ylim([mNrmGrid[0],mNrmGrid[-1]])
+        ax.set_ylim([mNrmGrid[0], mNrmGrid[-1]])
         ax.invert_xaxis()
     plt.legend()
     plt.show()
+
+
 ########################################################################################################################
 # Make a dictionary to specify an idiosyncratic income shocks consumer
 init_durable = dict(
@@ -537,6 +598,8 @@ init_durable = dict(
         "BoroCnstdNrm": 0,  # Borrowing Constraint of durable goods.
         "tol": 1e-08, # Tolerance for optimizer/ Acceptable difference before switching from adjuster to keeper
         "nNrmInitMean": 0, # Initial mean of durable stock.
+        "NestFac": 3, # To construct grids differently
+        "grid_type": 'nonlinear',
     }
 )
 
@@ -560,7 +623,9 @@ class DurableConsumerType(IndShockConsumerType):
         "aNrmCount",
         "BoroCnstdNrm",
         "tol",
-        "nNrmInitMean"
+        "nNrmInitMean",
+        "NestFac",
+        "grid_type",
     ]
 
     '''
@@ -615,22 +680,26 @@ class DurableConsumerType(IndShockConsumerType):
 
     def updatenNrmGrid(self): #Grid of Normalized Durable Stock
         # self.nNrmGrid = np.linspace(self.nNrmMin, self.nNrmMax, self.nNrmCount)
-        self.nNrmGrid = nonlinspace(self.nNrmMin,self.nNrmMax,self.nNrmCount,1.1)
+        #self.nNrmGrid = nonlinspace(self.nNrmMin,self.nNrmMax,self.nNrmCount,1.1)
+        self.nNrmGrid = construct_grid(self.nNrmMin, self.nNrmMax, self.nNrmCount, self.grid_type, self.NestFac)
         self.add_to_time_inv('nNrmGrid')
 
     def updatemNrmGrid(self): # Grid of Normalized Market resouces if d\neq n
         # self.mNrmGrid = np.linspace(self.mNrmMin, self.mNrmMax, self.mNrmCount)
-        self.mNrmGrid = nonlinspace(self.mNrmMin, self.mNrmMax, self.mNrmCount,1.1)
+        # self.mNrmGrid = nonlinspace(self.mNrmMin, self.mNrmMax, self.mNrmCount,1.1)
+        self.mNrmGrid = construct_grid(self.mNrmMin, self.mNrmMax, self.mNrmCount, self.grid_type, self.NestFac)
         self.add_to_time_inv('mNrmGrid')
 
     def updatexNrmGrid(self): # x = m + (1 - Adjc) d
         # self.xNrmGrid = np.linspace(self.xNrmMin, self.xNrmMax, self.xNrmCount)
-        self.xNrmGrid = nonlinspace(self.xNrmMin, self.xNrmMax, self.xNrmCount,1.1)
+        # self.xNrmGrid = nonlinspace(self.xNrmMin, self.xNrmMax, self.xNrmCount,1.1)
+        self.xNrmGrid = construct_grid(self.xNrmMin,self.xNrmMax,self.xNrmCount,self.grid_type, self.NestFac)
         self.add_to_time_inv('xNrmGrid')
 
     def updateaNrmGrid(self): # Grid of Normalized Market resouces if d\neq n
         # self.aNrmGrid = np.linspace(self.aNrmMin, self.aNrmMax, self.aNrmCount)
-        self.aNrmGrid = nonlinspace(self.aNrmMin, self.aNrmMax, self.aNrmCount,1.1)
+        # self.aNrmGrid = nonlinspace(self.aNrmMin, self.aNrmMax, self.aNrmCount,1.1)
+        self.aNrmGrid = construct_grid(self.aNrmMin, self.aNrmMax, self.aNrmCount, self.grid_type, self.NestFac)
         self.add_to_time_inv('aNrmGrid')
 
     # Solve last period
@@ -1114,6 +1183,8 @@ class DurableConsumerSolution(MetricObject):
         MPC --> MPCmax as m --> mNrmMin.
 
     """
+    distance_criteria = ["vFunc"]
+
     def __init__(
         self,
         cFunc=None,
@@ -1253,8 +1324,8 @@ def solve_DurableConsumer(
     w = np.zeros(post_shape)
     ### ii. Loop states
     # allocate temporary containers
-    m_plus = np.zeros(len(aNrmGrid))
-    x_plus = np.zeros(len(aNrmGrid))
+    # m_plus = np.zeros(len(aNrmGrid))
+    # x_plus = np.zeros(len(aNrmGrid))
 
     inv_v_keep_plus = np.zeros(len(aNrmGrid))
     inv_marg_u_keep_plus = np.zeros(len(aNrmGrid))
@@ -1264,7 +1335,7 @@ def solve_DurableConsumer(
     for i_d in range(len(nNrmGrid)):
         for ishock in range(iShock):
             n_plus = ((1 - dDepr) * nNrmGrid[i_d]) / (PermShkValsNext[ishock])
-            m_plus = m_plus = (Rfree * aNrmGrid)/ PermShkValsNext[ishock] + TranShkValsNext[ishock] #(Rfree * aNrmGrid + PermShkValsNext[ishock] * TranShkValsNext[ishock]) / ( PermShkValsNext[ishock])  # y_plus #R*a-grid + y_plus
+            m_plus = (Rfree * aNrmGrid)/ PermShkValsNext[ishock] + TranShkValsNext[ishock] #(Rfree * aNrmGrid + PermShkValsNext[ishock] * TranShkValsNext[ishock]) / ( PermShkValsNext[ishock])  # y_plus #R*a-grid + y_plus
             x_plus = m_plus + (1 - adjC) * n_plus
 
             # iii. prepare interpolators
