@@ -4,7 +4,12 @@ This REMARK replicates Druedahl, J. (2021). A guide on solving non-convex consum
 
 ## To Run all codes
 
-First, create a new environment and install all required packages in requirements.txt. Then go to 
+First, create a new environment and install all required packages in requirements.txt:
+```
+pip install -r requirements.txt
+```
+
+The corresponding `.py` and `.ipynb` files can be found here: 
 ```
 code/python
 ```
