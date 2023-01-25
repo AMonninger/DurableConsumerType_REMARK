@@ -1367,8 +1367,12 @@ def solve_DurableConsumer(
                     v_plus = -1 / inv_v_adj_plus[i_a]
                     marg_u_plus = 1 / inv_marg_u_adj_plus[i_a]
 
-                w[i_d, i_a] += ShkPrbsNext[ishock] * DiscFac * v_plus #weighted value function
-                qFunc_array[i_d, i_a] += ShkPrbsNext[ishock] * DiscFac * Rfree * marg_u_plus # weighted post decision function
+                # w[i_d, i_a] += ShkPrbsNext[ishock] * DiscFac * v_plus #weighted value function
+                # qFunc_array[i_d, i_a] += ShkPrbsNext[ishock] * DiscFac * Rfree * marg_u_plus # weighted post decision function
+
+                w[i_d, i_a]  += ShkPrbsNext[ishock] * PermShkValsNext[ishock] ** (1.0 - CRRA) * DiscFac * v_plus  # weighted value function
+                qFunc_array[i_d, i_a] += ShkPrbsNext[ishock] * PermShkValsNext[ishock] ** (-CRRA) * \
+                                    DiscFac * Rfree * marg_u_plus # weighted post decision function
 
     # vi. transform post decision value function
     invwFunc_array = -1 / w
