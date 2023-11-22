@@ -705,7 +705,7 @@ class DurableConsumptionModelClass_NrM(ModelClass):
             sim.n = np.zeros(sim_shape)
             sim.n1 = np.zeros((0, 0))  # not used
             sim.n2 = np.zeros((0, 0))  # not used
-        sim.discrete = np.zeros(sim_shape, dtype=np.int)
+        sim.discrete = np.zeros(sim_shape, dtype=np.int64)
         if par.do_2d:
             sim.d = np.zeros((0, 0))  # not used
             sim.d1 = np.zeros(sim_shape)

@@ -191,7 +191,7 @@ def egm(model):
         i_n=widgets.Dropdown(
             description="in",
             options=list(range(model.par.Nn)),
-            value=np.int(model.par.Nn / 2),
+            value=np.int64(model.par.Nn / 2),
         ),
     )
 

@@ -27,7 +27,8 @@ from HARK.ConsumptionSaving.ConsIndShockModel import (
 from HARK.interpolation import LinearInterp, BilinearInterp
 
 # Additional:
-from HARK.core import MetricObject, NullFunc  # Basic HARK features
+from HARK.core import NullFunc  # Basic HARK features
+from HARK.metric import MetricObject
 from copy import deepcopy
 from HARK.ConsumptionSaving.ConsIndShockModel import utility
 from HARK.utilities import make_grid_exp_mult
@@ -641,6 +642,7 @@ init_durable = dict(
 
 class DurableConsumerType(IndShockConsumerType):
     time_inv_ = IndShockConsumerType.time_inv_ + [
+        "Rfree",
         "alpha",
         "dDepr",
         "adjC",
@@ -1389,9 +1391,9 @@ def solve_DurableConsumer(
 
     ####################################################################################################################
     # 1) Shock values:
-    ShkPrbsNext = IncShkDstn.pmf
-    PermShkValsNext = IncShkDstn.X[0]
-    TranShkValsNext = IncShkDstn.X[1]
+    ShkPrbsNext = IncShkDstn.pmv
+    PermShkValsNext = IncShkDstn.atoms[0]
+    TranShkValsNext = IncShkDstn.atoms[1]
     iShock = len(PermShkValsNext)
 
     # 2. Unpack next period's solution

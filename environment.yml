@@ -5,9 +5,8 @@ channels:
   - defaults
 
 dependencies:
-  - python=3.8
-  - econ-ark=0.12.0
-  - numpy=1.20
+  - python=3.10
+  - numpy
   - matplotlib
   - seaborn
   - jupyter
@@ -18,3 +17,4 @@ dependencies:
   - pip:
     - EconModel
     - ConSav
+    - git+https://github.com/econ-ark/HARK@master
