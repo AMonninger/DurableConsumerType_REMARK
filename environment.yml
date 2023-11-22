@@ -1,0 +1,16 @@
+name: durables
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.10
+  - econ-ark=0.12.0
+  - numpy
+  - matplotlib
+  - seaborn
+  - pip
+  - pip:
+    - EconModel
+    - ConSav
