@@ -279,9 +279,9 @@ def euler_errors(sim, sol, par):
                 RHS = 0.0
                 for ishock in range(par.Nshocks):
                     # i. shocks
-                    par.psi[ishock]
+                    psi = par.psi[ishock]
                     psi_w = par.psi_w[ishock]
-                    par.xi[ishock]
+                    xi = par.xi[ishock]
                     xi_w = par.xi_w[ishock]
 
                     # # ii. next-period states
@@ -300,7 +300,7 @@ def euler_errors(sim, sol, par):
                     m_plus = (par.R * sim.a[t, i] + sim.psi[t, i] * sim.xi[t, i]) / (
                         sim.psi[t, i]
                     )  # y_plus #R*a-grid + y_plus
-                    m_plus + (1 - par.tau) * n_plus
+                    x_plus = m_plus + (1 - par.tau) * n_plus
 
                     # iii. weight
                     weight = psi_w * xi_w

@@ -433,21 +433,21 @@ class DurableConsumptionModelClass(ModelClass):
 
                     if do_assert:
                         assert np.all(
-                            (sol.c_keep[t] >= 0) & (np.isnan(sol.c_keep[t]) is False)
+                            (sol.c_keep[t] >= 0) & (np.isnan(sol.c_keep[t]) == False)
                         )
                         assert np.all(
                             (sol.inv_v_keep[t] >= 0)
-                            & (np.isnan(sol.inv_v_keep[t]) is False)
+                            & (np.isnan(sol.inv_v_keep[t]) == False)
                         )
                         assert np.all(
-                            (sol.d_adj[t] >= 0) & (np.isnan(sol.d_adj[t]) is False)
+                            (sol.d_adj[t] >= 0) & (np.isnan(sol.d_adj[t]) == False)
                         )
                         assert np.all(
-                            (sol.c_adj[t] >= 0) & (np.isnan(sol.c_adj[t]) is False)
+                            (sol.c_adj[t] >= 0) & (np.isnan(sol.c_adj[t]) == False)
                         )
                         assert np.all(
                             (sol.inv_v_adj[t] >= 0)
-                            & (np.isnan(sol.inv_v_adj[t]) is False)
+                            & (np.isnan(sol.inv_v_adj[t]) == False)
                         )
 
                 # ii. all other periods
@@ -471,11 +471,11 @@ class DurableConsumptionModelClass(ModelClass):
 
                     if do_assert and par.solmethod in ["nvfi", "negm"]:
                         assert np.all(
-                            (sol.inv_w[t] > 0) & (np.isnan(sol.inv_w[t]) is False)
+                            (sol.inv_w[t] > 0) & (np.isnan(sol.inv_w[t]) == False)
                         ), t
                         if par.solmethod in ["negm"]:
                             assert np.all(
-                                (sol.q[t] > 0) & (np.isnan(sol.q[t]) is False)
+                                (sol.q[t] > 0) & (np.isnan(sol.q[t]) == False)
                             ), t
 
                     # oo. solve keeper problem
@@ -503,11 +503,11 @@ class DurableConsumptionModelClass(ModelClass):
 
                     if do_assert:
                         assert np.all(
-                            (sol.c_keep[t] >= 0) & (np.isnan(sol.c_keep[t]) is False)
+                            (sol.c_keep[t] >= 0) & (np.isnan(sol.c_keep[t]) == False)
                         ), t
                         assert np.all(
                             (sol.inv_v_keep[t] >= 0)
-                            & (np.isnan(sol.inv_v_keep[t]) is False)
+                            & (np.isnan(sol.inv_v_keep[t]) == False)
                         ), t
 
                     # ooo. solve adjuster problem
@@ -531,14 +531,14 @@ class DurableConsumptionModelClass(ModelClass):
 
                     if do_assert:
                         assert np.all(
-                            (sol.d_adj[t] >= 0) & (np.isnan(sol.d_adj[t]) is False)
+                            (sol.d_adj[t] >= 0) & (np.isnan(sol.d_adj[t]) == False)
                         ), t
                         assert np.all(
-                            (sol.c_adj[t] >= 0) & (np.isnan(sol.c_adj[t]) is False)
+                            (sol.c_adj[t] >= 0) & (np.isnan(sol.c_adj[t]) == False)
                         ), t
                         assert np.all(
                             (sol.inv_v_adj[t] >= 0)
-                            & (np.isnan(sol.inv_v_adj[t]) is False)
+                            & (np.isnan(sol.inv_v_adj[t]) == False)
                         ), t
 
                 # iii. print
@@ -692,7 +692,7 @@ class DurableConsumptionModelClass(ModelClass):
             sim.n = np.zeros(sim_shape)
             sim.n1 = np.zeros((0, 0))  # not used
             sim.n2 = np.zeros((0, 0))  # not used
-        sim.discrete = np.zeros(sim_shape, dtype=np.int64)
+        sim.discrete = np.zeros(sim_shape, dtype=np.int)
         if par.do_2d:
             sim.d = np.zeros((0, 0))  # not used
             sim.d1 = np.zeros(sim_shape)

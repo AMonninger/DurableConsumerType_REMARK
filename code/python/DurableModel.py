@@ -1150,7 +1150,7 @@ class DurableConsumerType(IndShockConsumerType):
         exNrmNow = np.zeros(self.AgentCount) + np.nan
         adjusting = np.zeros(self.AgentCount) + np.nan
 
-        np.zeros(self.AgentCount) + np.nan  # TODO
+        MPCnow = np.zeros(self.AgentCount) + np.nan  # TODO
 
         for t in range(self.T_cycle):
             these = t == self.t_cycle
@@ -1372,25 +1372,20 @@ def solve_DurableConsumer(
     ####################################################################################################################
     # 1. Update utility functions:
     # i. U(C,D)
-    def u_inner(C, D, d_ubar, alpha):
-        return C**alpha * (D + d_ubar) ** (1 - alpha)
-
-    def CRRAutility(C, D):
-        return utility(u_inner(C, D, d_ubar, alpha), CRRA)
+    u_inner = lambda C, D, d_ubar, alpha: C**alpha * (D + d_ubar) ** (1 - alpha)
+    CRRAutility = lambda C, D: utility(u_inner(C, D, d_ubar, alpha), CRRA)
 
     # ii. uPC U(C,D) wrt C
-    def CRRAutilityP(C, D):
-        return (
-            alpha
-            * C ** (alpha * (1 - CRRA) - 1)
-            * (D + d_ubar) ** ((1 - alpha) * (1 - CRRA))
-        )
+    CRRAutilityP = lambda C, D: (
+        (alpha * C ** (alpha * (1 - CRRA) - 1))
+        * (D + d_ubar) ** ((1 - alpha) * (1 - CRRA))
+    )
 
     # iii. Inverse uPC U(C,D) wrt C
-    def CRRAutilityP_inv(C, D):
-        return (C / (alpha * (D + d_ubar) ** ((1 - alpha) * (1 - CRRA)))) ** (
-            1 / (alpha * (1 - CRRA) - 1)
-        )
+    CRRAutilityP_inv = lambda C, D: (
+        (C / (alpha * (D + d_ubar) ** ((1 - alpha) * (1 - CRRA))))
+        ** (1 / (alpha * (1 - CRRA) - 1))
+    )
 
     ####################################################################################################################
     # 1) Shock values:
@@ -1400,10 +1395,15 @@ def solve_DurableConsumer(
     iShock = len(PermShkValsNext)
 
     # 2. Unpack next period's solution
+    cFunc_next = solution_next.cFunc
+    cFuncAdj_next = solution_next.cFuncAdj
+    cFuncKeep_next = solution_next.cFuncKeep
 
+    vFunc_next = solution_next.vFunc
     vFuncAdj_next = solution_next.vFuncAdj
     vFuncKeep_next = solution_next.vFuncKeep
 
+    uPFunc_next = solution_next.uPFunc
     uPFuncAdj_next = solution_next.uPFuncAdj
     uPFuncKeep_next = solution_next.uPFuncKeep
     ####################################################################################################################
@@ -1521,7 +1521,7 @@ def solve_DurableConsumer(
     invwFunc_array = -1 / w
 
     # ix. Interpolate and make functions
-    BilinearInterp(invwFunc_array, nNrmGrid, aNrmGrid)
+    invwFunc = BilinearInterp(invwFunc_array, nNrmGrid, aNrmGrid)
     qFunc = BilinearInterp(qFunc_array, nNrmGrid, aNrmGrid)
 
     ####################################################################################################################

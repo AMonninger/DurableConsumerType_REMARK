@@ -38,7 +38,7 @@ def decision_functions(model):
         i_p=widgets.Dropdown(
             description="ip",
             options=list(range(model.par.Np)),
-            value=np.int64(model.par.Np / 2),
+            value=np.int(model.par.Np / 2),
         ),
         name=widgets.Dropdown(
             description="name",
@@ -205,12 +205,12 @@ def egm(model):
         i_p=widgets.Dropdown(
             description="ip",
             options=list(range(model.par.Np)),
-            value=np.int64(model.par.Np / 2),
+            value=np.int(model.par.Np / 2),
         ),
         i_n=widgets.Dropdown(
             description="in",
             options=list(range(model.par.Nn)),
-            value=np.int64(model.par.Nn / 2),
+            value=np.int(model.par.Nn / 2),
         ),
     )
 
