@@ -1,0 +1,20 @@
+name: durables
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.10
+  - numpy
+  - matplotlib
+  - seaborn
+  - jupyter
+  - jupyterlab
+  - ruff 
+  - nbqa
+  - pip
+  - pip:
+    - EconModel
+    - ConSav
+    - git+https://github.com/econ-ark/HARK@master

@@ -1,16 +1,17 @@
 import numpy as np
 from numba import njit, prange
 
- # consav
-from consav import linear_interp # for linear interpolation
+# consav
+from consav import linear_interp  # for linear interpolation
 
 # local modules
 # import trans
 import utility
 
-#@njit(parallel=True)
-def lifecycle(sim,sol,par):
-    """ simulate full life-cycle """
+
+# @njit(parallel=True)
+def lifecycle(sim, sol, par):
+    """simulate full life-cycle"""
 
     # unpack
     # p = sim.p
@@ -24,103 +25,128 @@ def lifecycle(sim,sol,par):
     d2 = sim.d2
     a = sim.a
     discrete = sim.discrete
-    
+
     for t in range(par.T):
         for i in prange(par.simN):
-            
             # a. beginning of period states
             if t == 0:
                 # p[t,i] = trans.p_plus_func(sim.p0[i],sim.psi[t,i],par)
-            #     if par.do_2d:
-            #         n1[t,i] = trans.n1_plus_func(sim.d10[i],par)
-            #         n2[t,i] = trans.n2_plus_func(sim.d20[i],par)
-            #     else:
-            #         n[t,i] = trans.n_plus_func(sim.d0[i],par)
-            #     m[t,i] = trans.m_plus_func(sim.a0[i],p[t,i],sim.xi[t,i],par)
-                n[t,i] = ((1 - par.delta) * sim.d0[i]) # / (psi_plus)
-                m[t,i] = (par.R * sim.a0[i] + sim.psi[t,i] * sim.xi[t,i]) / (sim.psi[t,i])
-                   # psi_plus)  # y_plus #R*a-grid + y_plus
+                #     if par.do_2d:
+                #         n1[t,i] = trans.n1_plus_func(sim.d10[i],par)
+                #         n2[t,i] = trans.n2_plus_func(sim.d20[i],par)
+                #     else:
+                #         n[t,i] = trans.n_plus_func(sim.d0[i],par)
+                #     m[t,i] = trans.m_plus_func(sim.a0[i],p[t,i],sim.xi[t,i],par)
+                n[t, i] = (1 - par.delta) * sim.d0[i]  # / (psi_plus)
+                m[t, i] = (par.R * sim.a0[i] + sim.psi[t, i] * sim.xi[t, i]) / (
+                    sim.psi[t, i]
+                )
                 # x_plus = m_plus + (1 - par.tau) * n_plus
-
+            # psi_plus)  # y_plus #R*a-grid + y_plus
             else:
-            #     # p[t,i] = trans.p_plus_func(p[t-1,i],sim.psi[t,i],par)
-            #     if par.do_2d:
-            #         n1[t,i] = trans.n1_plus_func(d1[t-1,i],par)
-            #         n2[t,i] = trans.n2_plus_func(d2[t-1,i],par)
-            #     else:
-            #         n[t,i] = trans.n_plus_func(d[t-1,i],par)
-            #     m[t,i] = trans.m_plus_func(a[t-1,i],p[t,i],sim.xi[t,i],par)
-                n[t,i] = ((1 - par.delta) * d[t-1,i]) / (sim.psi[t,i])
-                m[t,1] = (par.R * a[t-1,i] + sim.psi[t,i] * sim.xi[t,i]) / (
-                sim.psi[t,i])
+                #     # p[t,i] = trans.p_plus_func(p[t-1,i],sim.psi[t,i],par)
+                #     if par.do_2d:
+                #         n1[t,i] = trans.n1_plus_func(d1[t-1,i],par)
+                #         n2[t,i] = trans.n2_plus_func(d2[t-1,i],par)
+                #     else:
+                #         n[t,i] = trans.n_plus_func(d[t-1,i],par)
+                #     m[t,i] = trans.m_plus_func(a[t-1,i],p[t,i],sim.xi[t,i],par)
+                n[t, i] = ((1 - par.delta) * d[t - 1, i]) / (sim.psi[t, i])
+                m[t, 1] = (par.R * a[t - 1, i] + sim.psi[t, i] * sim.xi[t, i]) / (
+                    sim.psi[t, i]
+                )
             # b. optimal choices and post decision states
             if par.do_2d:
-                optimal_choice_2d(t,n1[t,i],n2[t,i],m[t,i],discrete[t,i:],d1[t,i:],d2[t,i:],c[t,i:],a[t,i:],sol,par)
+                optimal_choice_2d(
+                    t,
+                    n1[t, i],
+                    n2[t, i],
+                    m[t, i],
+                    discrete[t, i:],
+                    d1[t, i:],
+                    d2[t, i:],
+                    c[t, i:],
+                    a[t, i:],
+                    sol,
+                    par,
+                )
             else:
-                optimal_choice(t,n[t,i],m[t,i],discrete[t,i:],d[t,i:],c[t,i:],a[t,i:],sol,par)
-            
-#@njit
-def optimal_choice(t,n,m,discrete,d,c,a,sol,par):
+                optimal_choice(
+                    t,
+                    n[t, i],
+                    m[t, i],
+                    discrete[t, i:],
+                    d[t, i:],
+                    c[t, i:],
+                    a[t, i:],
+                    sol,
+                    par,
+                )
 
-    x =  m + (1 - par.tau) * n
+
+# @njit
+def optimal_choice(t, n, m, discrete, d, c, a, sol, par):
+    x = m + (1 - par.tau) * n
 
     # a. discrete choice
-    inv_v_keep = linear_interp.interp_2d(par.grid_n,par.grid_m,sol.inv_v_keep[t],n,m)
-    inv_v_adj = linear_interp.interp_1d(par.grid_x,sol.inv_v_adj[t],x)
+    inv_v_keep = linear_interp.interp_2d(
+        par.grid_n, par.grid_m, sol.inv_v_keep[t], n, m
+    )
+    inv_v_adj = linear_interp.interp_1d(par.grid_x, sol.inv_v_adj[t], x)
     adjust = inv_v_adj > inv_v_keep
-    
+
     # b. continuous choices
     if adjust:
-
         discrete[0] = 1
-        
-        d[0] = linear_interp.interp_1d(
-            par.grid_x,sol.d_adj[t],
-            x)
 
-        c[0] = linear_interp.interp_1d(
-            par.grid_x,sol.c_adj[t],
-            x)
+        d[0] = linear_interp.interp_1d(par.grid_x, sol.d_adj[t], x)
 
-        tot = d[0]+c[0]
-        if tot > x: 
-            d[0] *= x/tot
-            c[0] *= x/tot
+        c[0] = linear_interp.interp_1d(par.grid_x, sol.c_adj[t], x)
+
+        tot = d[0] + c[0]
+        if tot > x:
+            d[0] *= x / tot
+            c[0] *= x / tot
             a[0] = 0.0
         else:
             a[0] = x - tot
-            
-    else: 
-            
+
+    else:
         discrete[0] = 0
 
         d[0] = n
 
-        c[0] = linear_interp.interp_2d(
-            par.grid_n,par.grid_m,sol.c_keep[t],
-            n,m)
+        c[0] = linear_interp.interp_2d(par.grid_n, par.grid_m, sol.c_keep[t], n, m)
 
-        if c[0] > m: 
+        if c[0] > m:
             c[0] = m
             a[0] = 0.0
         else:
             a[0] = m - c[0]
 
-#@njit
-def optimal_choice_2d(t,n1,n2,m,discrete,d1,d2,c,a,sol,par):
 
+# @njit
+def optimal_choice_2d(t, n1, n2, m, discrete, d1, d2, c, a, sol, par):
     # a. discrete choice
     inv_v = 0
-    inv_v_keep = linear_interp.interp_3d(par.grid_n,par.grid_n,par.grid_m,sol.inv_v_keep_2d[t],n1,n2,m)
+    inv_v_keep = linear_interp.interp_3d(
+        par.grid_n, par.grid_n, par.grid_m, sol.inv_v_keep_2d[t], n1, n2, m
+    )
 
-    x_full = m + (1-par.tau1)*n1 + (1-par.tau2)*n2
-    inv_v_adj_full = linear_interp.interp_1d(par.grid_x,sol.inv_v_adj_full_2d[t],x_full)
-    
-    x_d1 = m + (1-par.tau1)*n1
-    inv_v_adj_d1 = linear_interp.interp_2d(par.grid_n,par.grid_x,sol.inv_v_adj_d1_2d[t],n2,x_d1)
+    x_full = m + (1 - par.tau1) * n1 + (1 - par.tau2) * n2
+    inv_v_adj_full = linear_interp.interp_1d(
+        par.grid_x, sol.inv_v_adj_full_2d[t], x_full
+    )
 
-    x_d2 = m + (1-par.tau2)*n2
-    inv_v_adj_d2 = linear_interp.interp_2d(par.grid_n,par.grid_x,sol.inv_v_adj_d2_2d[t],n1,x_d2)
+    x_d1 = m + (1 - par.tau1) * n1
+    inv_v_adj_d1 = linear_interp.interp_2d(
+        par.grid_n, par.grid_x, sol.inv_v_adj_d1_2d[t], n2, x_d1
+    )
+
+    x_d2 = m + (1 - par.tau2) * n2
+    inv_v_adj_d2 = linear_interp.interp_2d(
+        par.grid_n, par.grid_x, sol.inv_v_adj_d2_2d[t], n1, x_d2
+    )
 
     keep = False
     adj_full = False
@@ -150,101 +176,90 @@ def optimal_choice_2d(t,n1,n2,m,discrete,d1,d2,c,a,sol,par):
         adj_d2 = True
 
     # b. continuous choices
-    if keep: 
-            
+    if keep:
         discrete[0] = 0
 
         d1[0] = n1
         d2[0] = n2
 
         c[0] = linear_interp.interp_3d(
-            par.grid_n,par.grid_n,par.grid_m,sol.c_keep_2d[t],
-            n1,n2,m)
+            par.grid_n, par.grid_n, par.grid_m, sol.c_keep_2d[t], n1, n2, m
+        )
 
-        if c[0] > m: 
+        if c[0] > m:
             c[0] = m
             a[0] = 0.0
         else:
             a[0] = m - c[0]
 
     elif adj_full:
-
         discrete[0] = 1
-        
-        d1[0] = linear_interp.interp_1d(
-            par.grid_x,sol.d1_adj_full_2d[t],
-            x_full)
 
-        d2[0] = linear_interp.interp_1d(
-            par.grid_x,sol.d2_adj_full_2d[t],
-            x_full)
+        d1[0] = linear_interp.interp_1d(par.grid_x, sol.d1_adj_full_2d[t], x_full)
 
-        c[0] = linear_interp.interp_1d(
-            par.grid_x,sol.c_adj_full_2d[t],
-            x_full)
+        d2[0] = linear_interp.interp_1d(par.grid_x, sol.d2_adj_full_2d[t], x_full)
 
-        tot = d1[0]+d2[0]+c[0]
-        if tot > x_full: 
-            d1[0] *= x_full/tot
-            d2[0] *= x_full/tot
-            c[0] *= x_full/tot
+        c[0] = linear_interp.interp_1d(par.grid_x, sol.c_adj_full_2d[t], x_full)
+
+        tot = d1[0] + d2[0] + c[0]
+        if tot > x_full:
+            d1[0] *= x_full / tot
+            d2[0] *= x_full / tot
+            c[0] *= x_full / tot
             a[0] = 0.0
         else:
             a[0] = x_full - tot
-            
+
     elif adj_d1:
-
         discrete[0] = 2
-        
-        d1[0] = linear_interp.interp_2d(
-            par.grid_n,par.grid_x,sol.d1_adj_d1_2d[t],
-            n2,x_d1)
 
-        d2[0] = n2           
+        d1[0] = linear_interp.interp_2d(
+            par.grid_n, par.grid_x, sol.d1_adj_d1_2d[t], n2, x_d1
+        )
+
+        d2[0] = n2
 
         c[0] = linear_interp.interp_2d(
-            par.grid_n,par.grid_x,sol.c_adj_d1_2d[t],
-            n2,x_d1)
+            par.grid_n, par.grid_x, sol.c_adj_d1_2d[t], n2, x_d1
+        )
 
-        tot = d1[0]+c[0]
-        if tot > x_d1: 
-            d1[0] *= x_d1/tot
-            c[0] *= x_d1/tot
+        tot = d1[0] + c[0]
+        if tot > x_d1:
+            d1[0] *= x_d1 / tot
+            c[0] *= x_d1 / tot
             a[0] = 0.0
         else:
             a[0] = x_d1 - tot
 
     elif adj_d2:
-
         discrete[0] = 3
-        
+
         d1[0] = n1
 
         d2[0] = linear_interp.interp_2d(
-            par.grid_n,par.grid_x,sol.d2_adj_d2_2d[t],
-            n1,x_d2)
+            par.grid_n, par.grid_x, sol.d2_adj_d2_2d[t], n1, x_d2
+        )
 
         c[0] = linear_interp.interp_2d(
-            par.grid_n,par.grid_x,sol.c_adj_d2_2d[t],
-            n1,x_d2)
+            par.grid_n, par.grid_x, sol.c_adj_d2_2d[t], n1, x_d2
+        )
 
-        tot = d2[0]+c[0]
-        if tot > x_d2: 
-            d2[0] *= x_d2/tot
-            c[0] *= x_d2/tot
+        tot = d2[0] + c[0]
+        if tot > x_d2:
+            d2[0] *= x_d2 / tot
+            c[0] *= x_d2 / tot
             a[0] = 0.0
         else:
-            a[0] = x_d2 - tot            
+            a[0] = x_d2 - tot
 
-@njit            
-def euler_errors(sim,sol,par):
 
+@njit
+def euler_errors(sim, sol, par):
     # unpack
     euler_error = sim.euler_error
     euler_error_c = sim.euler_error_c
-    
+
     for i in prange(par.simN):
-        
         discrete_plus = np.zeros(1)
         d_plus = np.zeros(1)
         d1_plus = np.zeros(1)
@@ -252,21 +267,17 @@ def euler_errors(sim,sol,par):
         c_plus = np.zeros(1)
         a_plus = np.zeros(1)
 
-        for t in range(par.T-1):
+        for t in range(par.T - 1):
+            constrained = sim.a[t, i] < par.euler_cutoff
 
-            constrained = sim.a[t,i] < par.euler_cutoff
-            
             if constrained:
-
-                euler_error[t,i] = np.nan
-                euler_error_c[t,i] = np.nan
+                euler_error[t, i] = np.nan
+                euler_error_c[t, i] = np.nan
                 continue
 
             else:
-
                 RHS = 0.0
                 for ishock in range(par.Nshocks):
-                        
                     # i. shocks
                     psi = par.psi[ishock]
                     psi_w = par.psi_w[ishock]
@@ -285,45 +296,73 @@ def euler_errors(sim,sol,par):
                     # p_plus = trans.p_plus_func(p,psi_plus,par)
                     # n_plus = trans.n_plus_func(n,par)
 
-                    n_plus = ((1 - par.delta) * sim.d[t,i]) / (sim.psi[t,i])
-                    m_plus = (par.R * sim.a[t,i] + sim.psi[t,i] * sim.xi[t,i]) / (
-                        sim.psi[t,i])  # y_plus #R*a-grid + y_plus
+                    n_plus = ((1 - par.delta) * sim.d[t, i]) / (sim.psi[t, i])
+                    m_plus = (par.R * sim.a[t, i] + sim.psi[t, i] * sim.xi[t, i]) / (
+                        sim.psi[t, i]
+                    )  # y_plus #R*a-grid + y_plus
                     x_plus = m_plus + (1 - par.tau) * n_plus
 
                     # iii. weight
-                    weight = psi_w*xi_w
+                    weight = psi_w * xi_w
 
                     # iv. next-period choices
-                    #if par.do_2d:
+                    # if par.do_2d:
                     #    optimal_choice_2d(t+1,n1_plus,n2_plus,m_plus,discrete_plus,d1_plus,d2_plus,c_plus,a_plus,sol,par)
-                    #else:
-                    optimal_choice(t+1,n_plus,m_plus,discrete_plus,d_plus,c_plus,a_plus,sol,par)
+                    # else:
+                    optimal_choice(
+                        t + 1,
+                        n_plus,
+                        m_plus,
+                        discrete_plus,
+                        d_plus,
+                        c_plus,
+                        a_plus,
+                        sol,
+                        par,
+                    )
 
                     # v. next-period marginal utility
                     if par.do_2d:
-                        RHS += weight*par.beta*par.R*utility.marg_func_2d(c_plus[0],d1_plus[0],d2_plus[0],par)
+                        RHS += (
+                            weight
+                            * par.beta
+                            * par.R
+                            * utility.marg_func_2d(
+                                c_plus[0], d1_plus[0], d2_plus[0], par
+                            )
+                        )
                     else:
-                        RHS += weight*par.beta*par.R*utility.marg_func(c_plus[0],d_plus[0],par)
-                
-                if par.do_2d:
-                    euler_error[t,i] = sim.c[t,i] - utility.inv_marg_func_2d(RHS,sim.d1[t,i],sim.d2[t,i],par)
-                else:
-                    euler_error[t,i] = sim.c[t,i] - utility.inv_marg_func(RHS,sim.d[t,i],par)
+                        RHS += (
+                            weight
+                            * par.beta
+                            * par.R
+                            * utility.marg_func(c_plus[0], d_plus[0], par)
+                        )
 
-                euler_error_c[t,i] = sim.c[t,i]
+                if par.do_2d:
+                    euler_error[t, i] = sim.c[t, i] - utility.inv_marg_func_2d(
+                        RHS, sim.d1[t, i], sim.d2[t, i], par
+                    )
+                else:
+                    euler_error[t, i] = sim.c[t, i] - utility.inv_marg_func(
+                        RHS, sim.d[t, i], par
+                    )
+
+                euler_error_c[t, i] = sim.c[t, i]
+
 
 @njit(parallel=True)
-def calc_utility(sim,sol,par):
-    """ calculate utility for each individual """
+def calc_utility(sim, sol, par):
+    """calculate utility for each individual"""
 
     # unpack
     u = sim.utility
-    
+
     for t in range(par.T):
         for i in prange(par.simN):
-            
             if par.do_2d:
-                u[i] += par.beta**t*utility.func_2d(sim.c[t,i],sim.d1[t,i],sim.d2[t,i],par)
+                u[i] += par.beta**t * utility.func_2d(
+                    sim.c[t, i], sim.d1[t, i], sim.d2[t, i], par
+                )
             else:
-                u[i] += par.beta**t*utility.func(sim.c[t,i],sim.d[t,i],par)
-            
+                u[i] += par.beta**t * utility.func(sim.c[t, i], sim.d[t, i], par)
