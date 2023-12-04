@@ -2139,7 +2139,7 @@ def solve_DurableConsumer(
                         CRRA, dDepr, Rfree, PermGroFac)))
             
             qFuncD_array[i_d] = (
-                    DiscFac * LivPrb * Rfree * PermGroFac ** (-CRRA) * (1 - dDepr) *
+                    LivPrb * PermGroFac ** (-CRRA) * DiscFac * (1 - dDepr) *
                     expected(vp_next_vPFunc, IncShkDstn, args=(
                         vPFuncDNext, aNrmGridNow, dNrmGridNow[i_d],
                         CRRA, dDepr, Rfree, PermGroFac)))
@@ -2169,10 +2169,8 @@ def solve_DurableConsumer(
                             1.0 - CRRA) * DiscFac * LivPrb * vFunc_plus_array  # weighted value function
                 qFunc_array[i_d] += ShkPrbsNext[ishock] * PermShkValsNext[ishock] ** (-CRRA) * \
                                     DiscFac * LivPrb * Rfree * PermGroFac ** (-CRRA) * vPFunc_plus_array # weighted post decision function
-                # qFuncD_array[i_d] += ShkPrbsNext[ishock] * PermShkValsNext[ishock] ** (-CRRA) * \
-                #                      DiscFac * LivPrb * (1 - dDepr) * vPFuncD_plus_array
                 qFuncD_array[i_d] += ShkPrbsNext[ishock] * PermShkValsNext[ishock] ** (-CRRA) * \
-                                     DiscFac * LivPrb * Rfree * PermGroFac ** (-CRRA) * (1 - dDepr) * vPFuncD_plus_array
+                                     LivPrb * PermGroFac ** (-CRRA) * DiscFac * (1 - dDepr) * vPFuncD_plus_array
 
             inv_wFunc_array[i_d,1:] = utility_inv(wFunc_array[i_d], CRRA)
 
@@ -2523,10 +2521,10 @@ def solve_DurableConsumer(
             # Create Lambda
             aNrmKeep_aux = mNrmGridTotal - cFuncKeep_NM_array[i_d]
             Lambda = (
-                    DiscFac * LivPrb * PermGroFac ** (-CRRA) * Rfree * (1 - dDepr) *
+                    LivPrb * PermGroFac ** (-CRRA) * DiscFac * (1 - dDepr) *
                     expected(vp_next_vPFunc, IncShkDstn, args=(
                         vPFuncDNext, aNrmKeep_aux, nNrmGridNow[i_d],
-                        CRRA, dDepr, Rfree, PermGroFac)))  # TODO: Which variables do we all need?!
+                        CRRA, dDepr, Rfree, PermGroFac))) 
 
             vPFuncDKeep_NM_array[i_d] = CRRAutilityPD(cFuncKeep_NM_array[i_d], dFuncKeep_NM_array[i_d]) + Lambda  # Keep
 
