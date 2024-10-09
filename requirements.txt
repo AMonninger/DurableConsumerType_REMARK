@@ -1,9 +1,8 @@
 econ-ark==0.13.0
-numpy==1.20.1
-matplotlib==3.3.4
+# numpy==1.23
+# matplotlib==3.6
 EconModel==0.1
 ConSav==0.1
-seaborn==0.11.1
-pandas==1.4.4
+seaborn==0.12
+# pandas==1.5
 ipywidgets
-chardet
